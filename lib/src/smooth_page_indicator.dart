@@ -4,9 +4,14 @@ import 'effects/indicator_effect.dart';
 import 'effects/worm_effect.dart';
 import 'painters/indicator_painter.dart';
 
+int _indicatorCount;
+int _indicatorIndex;
+
 class SmoothPageIndicator extends AnimatedWidget {
   // a PageView controller to listen for page offset updates
   final PageController controller;
+
+  final IndicatorController indicatorController;
 
   /// Holds effect configuration to be used in the [IndicatorPainter]
   final IndicatorEffect effect;
@@ -18,15 +23,21 @@ class SmoothPageIndicator extends AnimatedWidget {
   final TextDirection textDirection;
 
   SmoothPageIndicator({
-    @required this.controller,
+    this.controller,
+    this.indicatorController,
     @required this.count,
     this.textDirection,
     this.effect = const WormEffect(),
     Key key,
-  })  : assert(controller != null),
+  })  : assert(controller != null || indicatorController != null),
         assert(effect != null),
         assert(count != null),
-        super(listenable: controller, key: key);
+        super(listenable: controller, key: key) {
+    _indicatorCount = count;
+    if (indicatorController != null) {
+      _indicatorIndex = indicatorController.initialPage;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +51,9 @@ class SmoothPageIndicator extends AnimatedWidget {
       // rebuild the painter with the new offset every time it updates
       painter: effect.buildPainter(
         count,
-        _currentPage,
+        controller != null
+            ? _currentPage.toDouble()
+            : _indicatorIndex.toDouble(),
         isRTL,
       ),
     );
@@ -51,6 +64,20 @@ class SmoothPageIndicator extends AnimatedWidget {
       return controller.page ?? controller.initialPage.toDouble();
     } catch (Exception) {
       return controller.initialPage.toDouble();
+    }
+  }
+}
+
+class IndicatorController {
+  final int initialPage;
+
+  IndicatorController({this.initialPage = 0}) : assert(initialPage != null);
+
+  void next() {
+    if (_indicatorIndex < _indicatorCount) {
+      _indicatorIndex++;
+    } else {
+      _indicatorIndex = 0;
     }
   }
 }
